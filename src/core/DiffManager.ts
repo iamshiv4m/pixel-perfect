@@ -2,15 +2,23 @@ import pixelmatch from "pixelmatch";
 import sharp from "sharp";
 import { promises as fs } from "fs";
 import path from "path";
-import { Logger } from "../utils/Logger.js";
-import { Screenshot, DiffResult, TestReport } from "../types/index.js";
+import { Logger } from "@utils/Logger";
+import type { Screenshot, DiffResult, TestReport } from "../types/index";
 
+/**
+ * Compares screenshots to baselines using pixelmatch and sharp.
+ * Provides methods to compare images and generate diff reports.
+ */
 export class DiffManager {
   private logger: Logger;
   private thresholds: {
     pixelMatch: number;
   };
 
+  /**
+   * Creates a new DiffManager instance.
+   * @param thresholds - Optional thresholds for pixel matching.
+   */
   constructor(thresholds: { pixelMatch?: number } = {}) {
     this.logger = new Logger();
     this.thresholds = {
@@ -19,6 +27,12 @@ export class DiffManager {
     };
   }
 
+  /**
+   * Compares screenshots to their baselines.
+   * @param screenshots - Array of screenshot metadata.
+   * @returns {Promise<DiffResult[]>} Array of diff results.
+   * @throws {Error} If comparison fails.
+   */
   async compare(screenshots: Screenshot[]): Promise<DiffResult[]> {
     try {
       this.logger.info("Starting visual diff comparison...");
@@ -36,6 +50,12 @@ export class DiffManager {
     }
   }
 
+  /**
+   * Compares a single screenshot to its baseline.
+   * @param screenshot - Screenshot metadata.
+   * @returns {Promise<DiffResult>} Diff result.
+   * @throws {Error} If comparison fails.
+   */
   private async compareScreenshot(screenshot: Screenshot): Promise<DiffResult> {
     try {
       const { device, filepath } = screenshot;
@@ -121,6 +141,12 @@ export class DiffManager {
     }
   }
 
+  /**
+   * Generates a summary report from diff results.
+   * @param diffs - Array of diff results.
+   * @returns {Promise<TestReport>} Test report.
+   * @throws {Error} If report generation fails.
+   */
   async generateDiffReport(diffs: DiffResult[]): Promise<TestReport> {
     try {
       const report: TestReport = {

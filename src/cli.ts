@@ -1,13 +1,36 @@
 #!/usr/bin/env node
 
+/**
+ * Pixel Perfect CLI
+ *
+ * Provides commands to run responsive visual regression tests and update baselines.
+ *
+ * Usage:
+ *   pixel-perfect test --url <url> [--devices <devices>] [--output <dir>] [--threshold <number>]
+ *   pixel-perfect update-baseline --url <url> [--output <dir>]
+ *
+ * Commands:
+ *   test            Run responsive tests on a URL
+ *   update-baseline Update baseline screenshots
+ *
+ * Options:
+ *   -u, --url <url>         URL to test
+ *   -d, --devices <devices> Comma-separated list of devices (default: iPhone 12,iPad Pro,Desktop)
+ *   -o, --output <dir>      Output directory (default: ./screenshots)
+ *   -t, --threshold <num>   Pixel match threshold (default: 0.1)
+ */
+
 import { Command } from "commander";
-import { PixelPerfect } from "./core/PixelPerfect.js";
-import { Logger } from "./utils/Logger.js";
-import { Device } from "./types/index.js";
+import { PixelPerfect } from "@core/PixelPerfect";
+import { Logger } from "@utils/Logger";
+import type { Device } from "./types/index";
 
 const program = new Command();
 const logger = new Logger();
 
+/**
+ * Predefined device configurations for CLI usage.
+ */
 const deviceMap: Record<string, Device> = {
   "iPhone 12": {
     name: "iPhone 12",
@@ -43,6 +66,15 @@ program
   .description("Automated Responsive Testing Platform")
   .version("0.1.0");
 
+/**
+ * 'test' command: Runs responsive tests on the specified URL and devices.
+ *
+ * Options:
+ *   -u, --url <url>         URL to test (required)
+ *   -d, --devices <devices> Comma-separated list of devices (default: iPhone 12,iPad Pro,Desktop)
+ *   -o, --output <dir>      Output directory (default: ./screenshots)
+ *   -t, --threshold <num>   Pixel match threshold (default: 0.1)
+ */
 program
   .command("test")
   .description("Run responsive tests on a URL")
@@ -94,6 +126,13 @@ program
     }
   );
 
+/**
+ * 'update-baseline' command: Updates baseline screenshots for the specified URL.
+ *
+ * Options:
+ *   -u, --url <url>         URL to test (required)
+ *   -o, --output <dir>      Output directory (default: ./screenshots)
+ */
 program
   .command("update-baseline")
   .description("Update baseline screenshots")

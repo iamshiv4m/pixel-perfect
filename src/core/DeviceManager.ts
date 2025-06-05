@@ -1,5 +1,5 @@
-import { Logger } from "../utils/Logger.js";
-import { Device } from "../types/index.js";
+import { Logger } from "@utils/Logger";
+import type { Device } from "../types/index";
 
 const DEVICE_PRESETS: Record<string, Omit<Device, "name">> = {
   "iPhone SE": {
@@ -60,6 +60,10 @@ const DEVICE_PRESETS: Record<string, Omit<Device, "name">> = {
   },
 };
 
+/**
+ * Manages device presets and custom device configurations.
+ * Provides methods to initialize, retrieve, add, and remove devices.
+ */
 export class DeviceManager {
   private logger: Logger;
   private devices: Device[] = [
@@ -110,6 +114,10 @@ export class DeviceManager {
     },
   ];
 
+  /**
+   * Creates a new DeviceManager instance.
+   * @param customDevices - Optional array of custom devices to add to the default list.
+   */
   constructor(customDevices?: Device[]) {
     this.logger = new Logger();
     if (customDevices) {
@@ -117,6 +125,10 @@ export class DeviceManager {
     }
   }
 
+  /**
+   * Initializes the devices by validating against presets.
+   * @throws {Error} If a device preset is not found.
+   */
   async initialize(): Promise<void> {
     try {
       this.logger.info("Initializing devices...");
@@ -142,22 +154,43 @@ export class DeviceManager {
     }
   }
 
+  /**
+   * Returns the list of configured devices.
+   * @returns {Device[]} Array of device configurations.
+   */
   getDevices(): Device[] {
     return this.devices;
   }
 
+  /**
+   * Returns a device by its name.
+   * @param name - The name of the device to retrieve.
+   * @returns {Device | undefined} The device configuration or undefined if not found.
+   */
   getDevice(name: string): Device | undefined {
     return this.devices.find((device) => device.name === name);
   }
 
+  /**
+   * Adds a new device to the list.
+   * @param device - The device configuration to add.
+   */
   addDevice(device: Device): void {
     this.devices.push(device);
   }
 
+  /**
+   * Removes a device by its name.
+   * @param deviceName - The name of the device to remove.
+   */
   removeDevice(deviceName: string): void {
     this.devices = this.devices.filter((device) => device.name !== deviceName);
   }
 
+  /**
+   * Returns the number of configured devices.
+   * @returns {number} The count of devices.
+   */
   getDeviceCount(): number {
     return this.devices.length;
   }

@@ -1,18 +1,9 @@
-import { PixelPerfect } from "./core/PixelPerfect.js";
-import { DeviceManager } from "./core/DeviceManager.js";
-import { ScreenshotManager } from "./core/ScreenshotManager.js";
-import { DiffManager } from "./core/DiffManager.js";
-import { ReportManager } from "./core/ReportManager.js";
-import { Logger } from "./utils/Logger.js";
-
-export {
-  PixelPerfect,
-  DeviceManager,
-  ScreenshotManager,
-  DiffManager,
-  ReportManager,
-  Logger,
-};
+export { PixelPerfect } from "@core/PixelPerfect";
+export { DeviceManager } from "@core/DeviceManager";
+export { ScreenshotManager } from "@core/ScreenshotManager";
+export { DiffManager } from "@core/DiffManager";
+export { ReportManager } from "@core/ReportManager";
+export { Logger } from "@utils/Logger";
 
 export type {
   Device,
@@ -21,6 +12,4 @@ export type {
   TestReport,
   PixelPerfectConfig,
   ReportOutput,
-} from "./types/index.js";
-
-export default PixelPerfect;
+} from "./types/index";

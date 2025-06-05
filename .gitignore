@@ -22,6 +22,8 @@ coverage/
 .vscode/
 *.swp
 *.swo
+.qodo
+.husky
 
 # Logs
 logs/

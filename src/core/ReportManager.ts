@@ -1,6 +1,6 @@
 import { promises as fs } from "fs";
 import path from "path";
-import { Logger } from "../utils/Logger.js";
+import { Logger } from "@utils/Logger";
 import {
   Screenshot,
   DiffResult,
@@ -8,17 +8,32 @@ import {
   ReportOutput,
 } from "../types/index.js";
 
+/**
+ * Generates JSON and HTML reports summarizing test results.
+ * Provides methods to generate and save reports.
+ */
 export class ReportManager {
   private logger: Logger;
   private outputDir: string;
   private reportsDir: string;
 
+  /**
+   * Creates a new ReportManager instance.
+   * @param outputDir - Directory to save reports.
+   */
   constructor(outputDir: string) {
     this.logger = new Logger();
     this.outputDir = outputDir;
     this.reportsDir = path.join(outputDir, "reports");
   }
 
+  /**
+   * Generates and saves both JSON and HTML reports.
+   * @param screenshots - Array of screenshot metadata.
+   * @param diffs - Array of diff results.
+   * @returns {Promise<ReportOutput>} Paths to generated reports and the report object.
+   * @throws {Error} If report generation fails.
+   */
   async generate(
     screenshots: Screenshot[],
     diffs: DiffResult[]
@@ -70,6 +85,12 @@ export class ReportManager {
     }
   }
 
+  /**
+   * Generates an HTML report from the test report.
+   * @param report - Test report object.
+   * @param outputPath - Path to save the HTML report.
+   * @throws {Error} If HTML report generation fails.
+   */
   private async generateHtmlReport(
     report: TestReport,
     outputPath: string

@@ -1,17 +1,28 @@
 import { chromium, Browser, BrowserContext } from "playwright";
 import path from "path";
-import { Logger } from "../utils/Logger.js";
-import { Device, Screenshot } from "../types/index.js";
+import { Logger } from "@utils/Logger";
+import type { Device, Screenshot } from "../types/index";
 
+/**
+ * Manages browser lifecycle and screenshot capture for each device.
+ * Uses Playwright to launch a browser, navigate to a URL, and capture screenshots.
+ */
 export class ScreenshotManager {
   private logger: Logger;
   private browser: Browser | null = null;
   private contexts: Map<string, BrowserContext> = new Map();
 
+  /**
+   * Creates a new ScreenshotManager instance.
+   */
   constructor() {
     this.logger = new Logger();
   }
 
+  /**
+   * Initializes the browser by launching a Playwright instance.
+   * @throws {Error} If browser initialization fails.
+   */
   async initialize(): Promise<void> {
     try {
       this.logger.info("Initializing browser...");
@@ -23,6 +34,14 @@ export class ScreenshotManager {
     }
   }
 
+  /**
+   * Captures screenshots for each device by navigating to the given URL.
+   * @param url - The URL to capture screenshots from.
+   * @param devices - Array of device configurations.
+   * @param outputDir - Directory to save the screenshots.
+   * @returns {Promise<Screenshot[]>} Array of screenshot metadata.
+   * @throws {Error} If the browser is not initialized or screenshot capture fails.
+   */
   async captureScreenshots(
     url: string,
     devices: Device[],
@@ -50,6 +69,14 @@ export class ScreenshotManager {
     return screenshots;
   }
 
+  /**
+   * Captures a screenshot for a single device.
+   * @param url - The URL to capture a screenshot from.
+   * @param device - The device configuration.
+   * @param outputDir - Directory to save the screenshot.
+   * @returns {Promise<Screenshot>} Screenshot metadata.
+   * @throws {Error} If the browser is not initialized or screenshot capture fails.
+   */
   private async captureScreenshot(
     url: string,
     device: Device,
@@ -89,6 +116,9 @@ export class ScreenshotManager {
     };
   }
 
+  /**
+   * Closes the browser and cleans up resources.
+   */
   async cleanup(): Promise<void> {
     if (this.browser) {
       await this.browser.close();

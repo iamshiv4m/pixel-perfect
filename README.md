@@ -2,72 +2,90 @@
 
 Automated Responsive Testing Platform
 
-## Overview
+---
 
-Pixel Perfect is an automated visual regression and responsive testing platform for web applications. It captures screenshots across multiple devices, compares them with baselines, and generates detailed reports to ensure your UI remains consistent and bug-free.
+Pixel Perfect is a CLI tool for automated responsive visual regression testing. It captures website screenshots across multiple devices, compares them to baselines, and generates detailed HTML/JSON reports highlighting layout shifts, broken UI, and inconsistencies.
 
 ## Features
 
-- Visual regression testing
-- Responsive testing across multiple devices
-- CLI tool for easy integration
-- TypeScript for type safety
-- Extensible device profiles
-- Screenshot diffing and reporting
+- Multi-device, multi-viewport screenshot capture
+- Visual diffing against baselines
+- Baseline management
+- Modern HTML and JSON reports
+- Extensible, modular TypeScript codebase
 
-## Getting Started
+## How It Works (Flow)
 
-### Prerequisites
-
-- Node.js (v18+ recommended)
-- npm
-
-### Installation
-
-```bash
-npm install
+```mermaid
+graph TD;
+  A[CLI Command] --> B[PixelPerfect Orchestrator]
+  B --> C[DeviceManager: Loads Devices]
+  B --> D[ScreenshotManager: Captures Screenshots]
+  B --> E[DiffManager: Compares to Baseline]
+  B --> F[ReportManager: Generates Reports]
+  F --> G[HTML/JSON Report Output]
 ```
 
-### Build
+1. **CLI**: You run a command like `pixel-perfect test --url https://example.com`.
+2. **PixelPerfect Orchestrator**: Coordinates the test run.
+3. **DeviceManager**: Loads device presets/configs.
+4. **ScreenshotManager**: Uses Playwright to capture screenshots for each device.
+5. **DiffManager**: Compares screenshots to baselines using pixelmatch/sharp.
+6. **ReportManager**: Generates HTML and JSON reports summarizing results.
 
-```bash
+## Installation
+
+```sh
+npm install -g pixel-perfect
+# or clone and run locally:
+git clone <repo-url>
+cd pixel-perfect
+npm install
 npm run build
 ```
 
-### Run Tests
+## Usage
 
-```bash
-npm test
+### Run Responsive Tests
+
+```sh
+pixel-perfect test --url https://example.com \
+  --devices "iPhone 12,iPad Pro,Desktop" \
+  --output ./screenshots \
+  --threshold 0.1
 ```
 
-### CLI Usage
+- `--url` (required): The URL to test
+- `--devices`: Comma-separated device names (default: iPhone 12,iPad Pro,Desktop)
+- `--output`: Output directory for screenshots/reports (default: ./screenshots)
+- `--threshold`: Pixel match threshold (default: 0.1)
 
-```bash
-# Test a website
-./dist/cli.js test -u https://your-website.com
+### Update Baseline Screenshots
 
-# Update baselines
-./dist/cli.js update -u https://your-website.com
+```sh
+pixel-perfect update-baseline --url https://example.com --output ./screenshots
 ```
 
-## Device Profiles
+## Output
 
-You can customize device profiles in the configuration or extend the built-in list. (See `DeviceManager` for details.)
+- Screenshots and baselines are saved in the output directory.
+- Reports are generated in `output/reports/` as HTML and JSON files.
 
-## Contributing
+## Extending
 
-1. Fork the repo
-2. Create your feature branch (`git checkout -b feature/YourFeature`)
-3. Commit your changes (`git commit -am 'Add some feature'`)
-4. Push to the branch (`git push origin feature/YourFeature`)
-5. Create a new Pull Request
+- Add new devices in the CLI or via config.
+- Extend core managers for custom flows.
 
-### Development
+## Project Structure
 
-- Lint: `npm run lint`
-- Format: `npm run lint:fix`
-- Build: `npm run build`
-- Test: `npm test`
+- `src/core/` – Main managers (Device, Screenshot, Diff, Report)
+- `src/types/` – TypeScript interfaces
+- `src/utils/` – Utilities (Logger, etc.)
+- `src/cli.ts` – CLI entry point
+
+---
+
+For more, see inline JSDoc comments in the codebase.
 
 ## License
 

@@ -2,9 +2,13 @@ import { DeviceManager } from "./DeviceManager.js";
 import { ScreenshotManager } from "./ScreenshotManager.js";
 import { DiffManager } from "./DiffManager.js";
 import { ReportManager } from "./ReportManager.js";
-import { Logger } from "../utils/Logger.js";
-import { PixelPerfectConfig, ReportOutput } from "../types/index.js";
+import { Logger } from "@utils/Logger";
+import type { PixelPerfectConfig, ReportOutput } from "../types/index";
 
+/**
+ * Main orchestrator class for the Pixel Perfect testing platform.
+ * Manages the full test lifecycle: device setup, screenshot capture, diffing, and report generation.
+ */
 export class PixelPerfect {
   private config: Required<PixelPerfectConfig>;
   private logger: Logger;
@@ -13,6 +17,11 @@ export class PixelPerfect {
   private diffManager: DiffManager;
   private reportManager: ReportManager;
 
+  /**
+   * Creates a new PixelPerfect instance.
+   * @param config - Configuration object. Must include a URL.
+   * @throws {Error} If URL is not provided.
+   */
   constructor(config: PixelPerfectConfig) {
     if (!config.url) {
       throw new Error("URL is required");
@@ -67,6 +76,15 @@ export class PixelPerfect {
     this.reportManager = new ReportManager(this.config.outputDir);
   }
 
+  /**
+   * Runs the full test workflow:
+   * 1. Initializes devices
+   * 2. Launches the browser
+   * 3. Captures screenshots for each device
+   * 4. Compares screenshots with baselines
+   * 5. Generates a test report
+   * @returns {Promise<ReportOutput>} The generated report output.
+   */
   async run(): Promise<ReportOutput> {
     try {
       this.logger.info("Starting Pixel Perfect test run...");
@@ -98,6 +116,10 @@ export class PixelPerfect {
     }
   }
 
+  /**
+   * Updates the baseline screenshots for all configured devices.
+   * This method is a placeholder and should be implemented as needed.
+   */
   async updateBaseline(): Promise<void> {
     try {
       this.logger.info("Updating baseline...");
@@ -109,6 +131,10 @@ export class PixelPerfect {
     }
   }
 
+  /**
+   * Validates the current configuration.
+   * This method is a placeholder and should be implemented as needed.
+   */
   async validate(): Promise<void> {
     try {
       this.logger.info("Validating configuration...");
