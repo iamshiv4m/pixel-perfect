@@ -2,8 +2,10 @@ import { DeviceManager } from "./DeviceManager.js";
 import { ScreenshotManager } from "./ScreenshotManager.js";
 import { DiffManager } from "./DiffManager.js";
 import { ReportManager } from "./ReportManager.js";
-import { Logger } from "@utils/Logger";
-import type { PixelPerfectConfig, ReportOutput } from "../types/index";
+import { Logger } from "../utils/Logger.js";
+import type { PixelPerfectConfig, ReportOutput } from "../types/index.js";
+import path from "path";
+import fs from "fs/promises";
 
 /**
  * Main orchestrator class for the Pixel Perfect testing platform.
@@ -118,16 +120,48 @@ export class PixelPerfect {
 
   /**
    * Updates the baseline screenshots for all configured devices.
-   * This method is a placeholder and should be implemented as needed.
+   * This will:
+   * 1. Create a baseline directory if it doesn't exist
+   * 2. Take new screenshots
+   * 3. Move them to the baseline directory
+   * @throws {Error} If baseline update fails
    */
   async updateBaseline(): Promise<void> {
     try {
       this.logger.info("Updating baseline...");
-      // Implement baseline update logic here
-      this.logger.info("Baseline updated successfully!");
+
+      // Initialize devices and browser
+      await this.deviceManager.initialize();
+      await this.screenshotManager.initialize();
+
+      // Create baseline directory
+      const baselineDir = path.join(this.config.outputDir, "baseline");
+      await fs.mkdir(baselineDir, { recursive: true });
+
+      // Take new screenshots
+      const screenshots = await this.screenshotManager.captureScreenshots(
+        this.config.url,
+        this.deviceManager.getDevices(),
+        this.config.outputDir
+      );
+
+      // Move screenshots to baseline directory
+      for (const screenshot of screenshots) {
+        const baselinePath = path.join(
+          baselineDir,
+          path.basename(screenshot.filepath)
+        );
+        await fs.rename(screenshot.filepath, baselinePath);
+        this.logger.info(`Updated baseline for ${screenshot.device}`);
+      }
+
+      this.logger.success("Baseline updated successfully!");
     } catch (error) {
       this.logger.error("Failed to update baseline:", error);
       throw error;
+    } finally {
+      // Cleanup
+      await this.screenshotManager.cleanup();
     }
   }
 

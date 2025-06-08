@@ -21,9 +21,9 @@
  */
 
 import { Command } from "commander";
-import { PixelPerfect } from "@core/PixelPerfect";
-import { Logger } from "@utils/Logger";
-import type { Device } from "./types/index";
+import { PixelPerfect } from "./core/PixelPerfect.js";
+import { Logger } from "./utils/Logger.js";
+import type { Device } from "./types/index.js";
 
 const program = new Command();
 const logger = new Logger();

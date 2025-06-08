@@ -1,6 +1,6 @@
 import { chromium, Browser, BrowserContext } from "playwright";
 import path from "path";
-import { Logger } from "@utils/Logger";
+import { Logger } from "../utils/Logger.js";
 import type { Device, Screenshot } from "../types/index";
 
 /**

@@ -2,7 +2,7 @@ import pixelmatch from "pixelmatch";
 import sharp from "sharp";
 import { promises as fs } from "fs";
 import path from "path";
-import { Logger } from "@utils/Logger";
+import { Logger } from "../utils/Logger.js";
 import type { Screenshot, DiffResult, TestReport } from "../types/index";
 
 /**

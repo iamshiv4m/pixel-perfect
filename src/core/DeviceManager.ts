@@ -1,4 +1,4 @@
-import { Logger } from "@utils/Logger";
+import { Logger } from "../utils/Logger.js";
 import type { Device } from "../types/index";
 
 const DEVICE_PRESETS: Record<string, Omit<Device, "name">> = {

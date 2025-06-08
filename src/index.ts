@@ -1,9 +1,9 @@
-export { PixelPerfect } from "@core/PixelPerfect";
-export { DeviceManager } from "@core/DeviceManager";
-export { ScreenshotManager } from "@core/ScreenshotManager";
-export { DiffManager } from "@core/DiffManager";
-export { ReportManager } from "@core/ReportManager";
-export { Logger } from "@utils/Logger";
+export { PixelPerfect } from "./core/PixelPerfect.js";
+export { DeviceManager } from "./core/DeviceManager.js";
+export { ScreenshotManager } from "./core/ScreenshotManager.js";
+export { DiffManager } from "./core/DiffManager.js";
+export { ReportManager } from "./core/ReportManager.js";
+export { Logger } from "./utils/Logger.js";
 
 export type {
   Device,
