@@ -9,6 +9,7 @@ interface BrowserConfig {
   headless?: boolean;
   slowMo?: number;
   timeout?: number;
+  args?: string[];
 }
 
 /**

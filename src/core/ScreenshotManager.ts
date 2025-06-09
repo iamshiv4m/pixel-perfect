@@ -22,6 +22,12 @@ export class ScreenshotManager {
     this.browserManager = new BrowserManager({
       type: "chromium",
       headless: true,
+      args: [
+        "--disable-gpu",
+        "--disable-dev-shm-usage",
+        "--disable-setuid-sandbox",
+        "--no-sandbox",
+      ],
     });
   }
 
@@ -100,27 +106,48 @@ export class ScreenshotManager {
       );
       const page = await context.newPage();
 
-      // Wait for network idle and any dynamic content
-      await page.goto(url, { waitUntil: "networkidle" });
-      await this.waitForDynamicContent(page);
+      // Set a longer timeout and more resilient navigation options
+      await page.setDefaultNavigationTimeout(120000); // 2 minutes
+      await page.setDefaultTimeout(120000);
 
-      const screenshotPath = path.join(
-        outputDir,
-        `${device.name}-${browserType}.png`
-      );
-      await page.screenshot({ path: screenshotPath, fullPage: true });
-      await page.close();
+      try {
+        await page.goto(url, {
+          waitUntil: "domcontentloaded",
+          timeout: 120000,
+        });
 
-      return {
-        device: device.name,
-        browser: browserType,
-        filepath: screenshotPath,
-        timestamp: new Date().toISOString(),
-        viewport: {
-          width: device.viewport.width,
-          height: device.viewport.height,
-        },
-      };
+        // Wait for any dynamic content
+        await this.waitForDynamicContent(page);
+
+        // Take screenshot
+        const screenshotPath = path.join(
+          outputDir,
+          `${device.name}-${browserType}.png`
+        );
+        await page.screenshot({
+          path: screenshotPath,
+          fullPage: true,
+          timeout: 30000,
+        });
+
+        return {
+          device: device.name,
+          browser: browserType,
+          filepath: screenshotPath,
+          timestamp: new Date().toISOString(),
+          viewport: {
+            width: device.viewport.width,
+            height: device.viewport.height,
+          },
+        };
+      } catch (error: any) {
+        this.logger.error(
+          `Navigation or screenshot failed for ${device.name}: ${error.message}`
+        );
+        throw error;
+      } finally {
+        await page.close();
+      }
     } catch (error) {
       this.logger.error(
         `Failed to capture screenshot for ${device.name} on ${browserType}:`,

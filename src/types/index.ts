@@ -1,3 +1,5 @@
+import type { BrowserType } from "../core/BrowserManager";
+
 /**
  * Represents a device configuration for testing.
  */
@@ -109,4 +111,12 @@ export interface ReportOutput {
   htmlPath: string;
   /** The test report object. */
   report: TestReport;
+}
+
+export interface BrowserConfig {
+  type: BrowserType;
+  headless?: boolean;
+  slowMo?: number;
+  timeout?: number;
+  args?: string[];
 }
