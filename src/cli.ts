@@ -23,43 +23,9 @@
 import { Command } from "commander";
 import { PixelPerfect } from "./core/PixelPerfect.js";
 import { Logger } from "./utils/Logger.js";
-import type { Device } from "./types/index.js";
 
 const program = new Command();
 const logger = new Logger();
-
-/**
- * Predefined device configurations for CLI usage.
- */
-const deviceMap: Record<string, Device> = {
-  "iPhone 12": {
-    name: "iPhone 12",
-    viewport: { width: 390, height: 844 },
-    deviceScaleFactor: 3,
-    isMobile: true,
-    hasTouch: true,
-    userAgent:
-      "Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1",
-  },
-  "iPad Pro": {
-    name: "iPad Pro",
-    viewport: { width: 1024, height: 1366 },
-    deviceScaleFactor: 2,
-    isMobile: true,
-    hasTouch: true,
-    userAgent:
-      "Mozilla/5.0 (iPad; CPU OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1",
-  },
-  Desktop: {
-    name: "Desktop",
-    viewport: { width: 1920, height: 1080 },
-    deviceScaleFactor: 1,
-    isMobile: false,
-    hasTouch: false,
-    userAgent:
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.82 Safari/537.36",
-  },
-};
 
 program
   .name("pixel-perfect")
@@ -77,36 +43,36 @@ program
  */
 program
   .command("test")
-  .description("Run visual regression tests")
-  .requiredOption("-u, --url <url>", "URL to test")
-  .option("-o, --output <dir>", "Output directory", "./screenshots")
-  .option(
-    "-b, --browsers <browsers>",
-    "Comma-separated list of browsers",
-    "chromium"
-  )
+  .description("Run visual regression tests on a URL")
+  .requiredOption("-u, --url <url>", "URL to test (e.g. https://example.com)")
   .option(
     "-d, --devices <devices>",
-    "Comma-separated list of devices",
+    "Comma-separated list of devices to test (e.g. 'iPhone 12,iPad Pro,Desktop')",
     "iPhone 12,iPad Pro,Desktop"
   )
-  .option("-p, --parallel <number>", "Number of parallel browsers", "3")
-  .option("--ignore-antialiasing", "Ignore anti-aliasing differences")
-  .option("--ignore-colors", "Compare in grayscale")
-  .option("--ignore-transparency", "Ignore transparency differences")
-  .option("--threshold <number>", "Pixel matching threshold", "0.1")
+  .option(
+    "-o, --output <dir>",
+    "Output directory for screenshots and reports",
+    "./screenshots"
+  )
+  .option(
+    "-t, --threshold <number>",
+    "Pixel match threshold (0-1, default: 0.1)",
+    "0.1"
+  )
+  .option("--ignore-antialiasing", "Ignore anti-aliasing differences", true)
+  .option(
+    "--ignore-colors",
+    "Ignore color differences (useful for dark/light mode)",
+    false
+  )
+  .option("--ignore-transparency", "Ignore transparency differences", true)
   .action(async (options) => {
     try {
-      const browsers = options.browsers.split(",");
-      const deviceNames = options.devices.split(",");
-      const devices = deviceNames.map((name: string) => deviceMap[name]);
-
       const pixelPerfect = new PixelPerfect({
         url: options.url,
         outputDir: options.output,
-        browsers,
-        devices,
-        maxParallelBrowsers: parseInt(options.parallel),
+        devices: options.devices.split(","),
         diffOptions: {
           threshold: parseFloat(options.threshold),
           ignoreAntialiasing: options.ignoreAntialiasing,
@@ -115,9 +81,7 @@ program
         },
       });
 
-      const report = await pixelPerfect.run();
-      logger.success("Test completed successfully!");
-      logger.info(`Report saved to: ${report.htmlPath}`);
+      await pixelPerfect.run();
     } catch (error) {
       logger.error("Test failed:", error);
       process.exit(1);
@@ -133,38 +97,50 @@ program
  */
 program
   .command("update-baseline")
-  .description("Update baseline screenshots")
-  .requiredOption("-u, --url <url>", "URL to test")
-  .option("-o, --output <dir>", "Output directory", "./screenshots")
-  .option(
-    "-b, --browsers <browsers>",
-    "Comma-separated list of browsers",
-    "chromium"
-  )
+  .description("Update baseline screenshots for a URL")
+  .requiredOption("-u, --url <url>", "URL to capture baselines for")
   .option(
     "-d, --devices <devices>",
-    "Comma-separated list of devices",
+    "Comma-separated list of devices to capture",
     "iPhone 12,iPad Pro,Desktop"
+  )
+  .option(
+    "-o, --output <dir>",
+    "Output directory for baselines",
+    "./screenshots"
   )
   .action(async (options) => {
     try {
-      const browsers = options.browsers.split(",");
-      const deviceNames = options.devices.split(",");
-      const devices = deviceNames.map((name: string) => deviceMap[name]);
-
       const pixelPerfect = new PixelPerfect({
         url: options.url,
         outputDir: options.output,
-        browsers,
-        devices,
+        devices: options.devices.split(","),
       });
 
       await pixelPerfect.updateBaseline();
-      logger.success("Baseline updated successfully!");
     } catch (error) {
       logger.error("Failed to update baseline:", error);
       process.exit(1);
     }
   });
+
+// Add examples to help
+program.addHelpText(
+  "after",
+  `
+Examples:
+  # Run tests on example.com with default devices
+  $ pixel-perfect test --url https://example.com
+
+  # Test specific devices with custom threshold
+  $ pixel-perfect test --url https://example.com --devices "iPhone 12,Desktop" --threshold 0.05
+
+  # Update baselines for a URL
+  $ pixel-perfect update-baseline --url https://example.com
+
+  # Test with custom output directory
+  $ pixel-perfect test --url https://example.com --output ./my-screenshots
+`
+);
 
 program.parse();

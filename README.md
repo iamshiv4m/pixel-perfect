@@ -8,84 +8,168 @@ Pixel Perfect is a CLI tool for automated responsive visual regression testing. 
 
 ## Features
 
-- Multi-device, multi-viewport screenshot capture
-- Visual diffing against baselines
-- Baseline management
-- Modern HTML and JSON reports
-- Extensible, modular TypeScript codebase
-
-## How It Works (Flow)
-
-```mermaid
-graph TD;
-  A[CLI Command] --> B[PixelPerfect Orchestrator]
-  B --> C[DeviceManager: Loads Devices]
-  B --> D[ScreenshotManager: Captures Screenshots]
-  B --> E[DiffManager: Compares to Baseline]
-  B --> F[ReportManager: Generates Reports]
-  F --> G[HTML/JSON Report Output]
-```
-
-1. **CLI**: You run a command like `pixel-perfect test --url https://example.com`.
-2. **PixelPerfect Orchestrator**: Coordinates the test run.
-3. **DeviceManager**: Loads device presets/configs.
-4. **ScreenshotManager**: Uses Playwright to capture screenshots for each device.
-5. **DiffManager**: Compares screenshots to baselines using pixelmatch/sharp.
-6. **ReportManager**: Generates HTML and JSON reports summarizing results.
+- 📱 Multi-device, multi-viewport screenshot capture
+- 🔍 Visual diffing against baselines
+- 📊 Baseline management
+- 📝 Modern HTML and JSON reports
+- 🚀 Extensible, modular TypeScript codebase
+- ⚡ Parallel browser testing
+- 🎨 Smart diffing with configurable options
 
 ## Installation
 
 ```sh
+# Install globally
 npm install -g pixel-perfect
-# or clone and run locally:
-git clone <repo-url>
-cd pixel-perfect
-npm install
-npm run build
+
+# Or use locally
+npm install pixel-perfect --save-dev
 ```
 
-## Usage
+## Quick Start
 
-### Run Responsive Tests
+1. **Run your first test:**
 
 ```sh
-pixel-perfect test --url https://example.com \
-  --devices "iPhone 12,iPad Pro,Desktop" \
-  --output ./screenshots \
-  --threshold 0.1
+pixel-perfect test --url https://example.com
 ```
 
-- `--url` (required): The URL to test
-- `--devices`: Comma-separated device names (default: iPhone 12,iPad Pro,Desktop)
-- `--output`: Output directory for screenshots/reports (default: ./screenshots)
-- `--threshold`: Pixel match threshold (default: 0.1)
-
-### Update Baseline Screenshots
+2. **Update baselines:**
 
 ```sh
-pixel-perfect update-baseline --url https://example.com --output ./screenshots
+pixel-perfect update-baseline --url https://example.com
 ```
 
-## Output
+## Usage Guide
 
-- Screenshots and baselines are saved in the output directory.
-- Reports are generated in `output/reports/` as HTML and JSON files.
+### Basic Testing
 
-## Extending
+```sh
+# Test with default devices (iPhone 12, iPad Pro, Desktop)
+pixel-perfect test --url https://example.com
 
-- Add new devices in the CLI or via config.
-- Extend core managers for custom flows.
+# Test specific devices
+pixel-perfect test --url https://example.com --devices "iPhone 12,Desktop"
+
+# Custom output directory
+pixel-perfect test --url https://example.com --output ./my-screenshots
+```
+
+### Advanced Options
+
+```sh
+# Adjust pixel matching threshold (0-1)
+pixel-perfect test --url https://example.com --threshold 0.05
+
+# Ignore anti-aliasing differences
+pixel-perfect test --url https://example.com --ignore-antialiasing
+
+# Ignore color differences (useful for dark/light mode)
+pixel-perfect test --url https://example.com --ignore-colors
+
+# Ignore transparency
+pixel-perfect test --url https://example.com --ignore-transparency
+```
+
+### Baseline Management
+
+```sh
+# Update baselines for all devices
+pixel-perfect update-baseline --url https://example.com
+
+# Update baselines for specific devices
+pixel-perfect update-baseline --url https://example.com --devices "iPhone 12,Desktop"
+```
+
+## Configuration
+
+### Default Devices
+
+The tool comes with predefined device configurations:
+
+- Mobile: iPhone 12, iPhone 14, Pixel 8, etc.
+- Tablet: iPad Pro, iPad Air, etc.
+- Desktop: 1920x1080, 2560x1440, etc.
+
+### Custom Configuration
+
+Create a `pixel-perfect.config.js` file:
+
+```js
+module.exports = {
+  devices: [
+    {
+      name: "Custom Device",
+      viewport: { width: 1920, height: 1080 },
+      deviceScaleFactor: 1,
+      isMobile: false,
+      hasTouch: false,
+      userAgent: "Mozilla/5.0 ...",
+    },
+  ],
+  diffOptions: {
+    threshold: 0.1,
+    ignoreAntialiasing: true,
+    ignoreColors: false,
+    ignoreTransparency: true,
+  },
+};
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Browser Launch Fails**
+
+   - Ensure Playwright browsers are installed: `npx playwright install`
+   - Check system requirements for headless browser support
+
+2. **Screenshot Size Mismatch**
+
+   - Run `update-baseline` to refresh baseline screenshots
+   - Verify device configurations match between test and baseline
+
+3. **Network Timeouts**
+
+   - Increase timeout in configuration
+   - Check network connectivity
+   - Verify URL accessibility
+
+4. **Visual Diffs Too Sensitive**
+   - Adjust threshold value
+   - Enable ignoreAntialiasing
+   - Configure ignoreRegions for dynamic content
+
+### Debug Mode
+
+Run with debug logging:
+
+```sh
+DEBUG=pw:api pixel-perfect test --url https://example.com
+```
 
 ## Project Structure
 
-- `src/core/` – Main managers (Device, Screenshot, Diff, Report)
-- `src/types/` – TypeScript interfaces
-- `src/utils/` – Utilities (Logger, etc.)
-- `src/cli.ts` – CLI entry point
+```
+pixel-perfect/
+├── src/
+│   ├── core/           # Core managers
+│   ├── types/          # TypeScript types
+│   ├── utils/          # Utilities
+│   └── cli.ts          # CLI entry point
+├── screenshots/        # Test outputs
+├── reports/           # Test reports
+└── tests/             # Test files
+```
 
----
+## Contributing
 
-For more, see inline JSDoc comments in the codebase.
+1. Fork the repository
+2. Create your feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
 
 ## License
 

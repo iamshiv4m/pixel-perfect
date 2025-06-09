@@ -28,6 +28,7 @@ export class ScreenshotManager {
         "--disable-setuid-sandbox",
         "--no-sandbox",
       ],
+      timeout: 60000, // 60 second timeout
     });
   }
 
@@ -43,9 +44,13 @@ export class ScreenshotManager {
         browserTypes.map((type) => this.browserManager.initializeBrowser(type))
       );
       this.logger.info("Browsers initialized");
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error("Failed to initialize browsers:", error);
-      throw error;
+      throw new Error(
+        `Browser initialization failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
     }
   }
 
@@ -55,33 +60,53 @@ export class ScreenshotManager {
    * @param url - The URL to capture screenshots from
    * @param devices - Array of device configurations
    * @param outputDir - Directory to save the screenshots
-   * @param browserTypes - Array of browser types to use (default: ["chromium"])
    * @returns {Promise<Screenshot[]>} Array of screenshot metadata
    * @throws {Error} If screenshot capture fails
    */
   async captureScreenshots(
     url: string,
     devices: Device[],
-    outputDir: string,
-    browserTypes: BrowserType[] = ["chromium"]
+    outputDir: string
   ): Promise<Screenshot[]> {
     const screenshots: Screenshot[] = [];
+    const errors: Error[] = [];
 
-    // Create batches of devices for parallel processing
-    const batches = this.createBatches(devices, this.maxParallelBrowsers);
+    try {
+      // Process devices in parallel batches
+      for (let i = 0; i < devices.length; i += this.maxParallelBrowsers) {
+        const batch = devices.slice(i, i + this.maxParallelBrowsers);
+        const batchPromises = batch.map((device) =>
+          this.captureScreenshot(url, device, outputDir).catch(
+            (error: unknown) => {
+              const err =
+                error instanceof Error ? error : new Error(String(error));
+              errors.push(err);
+              return null;
+            }
+          )
+        );
 
-    for (const batch of batches) {
-      const batchPromises = batch.flatMap((device) =>
-        browserTypes.map((browserType) =>
-          this.captureScreenshot(url, device, outputDir, browserType)
-        )
+        const batchResults = await Promise.all(batchPromises);
+        screenshots.push(
+          ...batchResults.filter((s): s is Screenshot => s !== null)
+        );
+      }
+
+      if (errors.length > 0) {
+        this.logger.warn(
+          `Completed with ${errors.length} errors. Check logs for details.`
+        );
+      }
+
+      return screenshots;
+    } catch (error: unknown) {
+      this.logger.error("Failed to capture screenshots:", error);
+      throw new Error(
+        `Screenshot capture failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`
       );
-
-      const batchResults = await Promise.all(batchPromises);
-      screenshots.push(...batchResults);
     }
-
-    return screenshots;
   }
 
   /**
@@ -89,115 +114,78 @@ export class ScreenshotManager {
    * @param url - The URL to capture a screenshot from
    * @param device - The device configuration
    * @param outputDir - Directory to save the screenshot
-   * @param browserType - The type of browser to use
    * @returns {Promise<Screenshot>} Screenshot metadata
    * @throws {Error} If screenshot capture fails
    */
   private async captureScreenshot(
     url: string,
     device: Device,
-    outputDir: string,
-    browserType: BrowserType
+    outputDir: string
   ): Promise<Screenshot> {
+    const context = await this.browserManager.createContext(device, "chromium");
+    const page = await context.newPage();
+    const screenshotPath = path.join(
+      outputDir,
+      `${device.name.toLowerCase().replace(/\s+/g, "-")}.png`
+    );
+
     try {
-      const context = await this.browserManager.createContext(
-        device,
-        browserType
-      );
-      const page = await context.newPage();
+      this.logger.info(`Capturing screenshot for ${device.name}...`);
 
-      // Set a longer timeout and more resilient navigation options
-      await page.setDefaultNavigationTimeout(120000); // 2 minutes
-      await page.setDefaultTimeout(120000);
-
-      try {
-        await page.goto(url, {
-          waitUntil: "domcontentloaded",
-          timeout: 120000,
-        });
-
-        // Wait for any dynamic content
-        await this.waitForDynamicContent(page);
-
-        // Take screenshot
-        const screenshotPath = path.join(
-          outputDir,
-          `${device.name}-${browserType}.png`
-        );
-        await page.screenshot({
-          path: screenshotPath,
-          fullPage: true,
-          timeout: 30000,
-        });
-
-        return {
-          device: device.name,
-          browser: browserType,
-          filepath: screenshotPath,
-          timestamp: new Date().toISOString(),
-          viewport: {
-            width: device.viewport.width,
-            height: device.viewport.height,
-          },
-        };
-      } catch (error: any) {
-        this.logger.error(
-          `Navigation or screenshot failed for ${device.name}: ${error.message}`
-        );
-        throw error;
-      } finally {
-        await page.close();
+      // Navigate with retry logic
+      let retries = 3;
+      while (retries > 0) {
+        try {
+          await page.goto(url, {
+            waitUntil: "domcontentloaded",
+            timeout: 60000,
+          });
+          break;
+        } catch (error: unknown) {
+          retries--;
+          if (retries === 0) throw error;
+          this.logger.warn(
+            `Navigation failed for ${device.name}, retrying... (${retries} attempts left)`
+          );
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+        }
       }
-    } catch (error) {
-      this.logger.error(
-        `Failed to capture screenshot for ${device.name} on ${browserType}:`,
-        error
-      );
-      throw error;
-    }
-  }
 
-  /**
-   * Creates batches of devices for parallel processing.
-   * @param devices - Array of devices to batch
-   * @param batchSize - Size of each batch
-   * @returns {Device[][]} Array of device batches
-   */
-  private createBatches(devices: Device[], batchSize: number): Device[][] {
-    const batches: Device[][] = [];
-    for (let i = 0; i < devices.length; i += batchSize) {
-      batches.push(devices.slice(i, i + batchSize));
-    }
-    return batches;
-  }
+      // Wait for network to be idle
+      await page
+        .waitForLoadState("networkidle", { timeout: 10000 })
+        .catch(() => {
+          this.logger.warn(
+            `Network did not become idle for ${device.name}, proceeding anyway...`
+          );
+        });
 
-  /**
-   * Waits for dynamic content to load and stabilize.
-   * @param page - The page to wait for
-   */
-  private async waitForDynamicContent(page: any): Promise<void> {
-    try {
-      // Wait for any animations to complete
-      await page.waitForTimeout(1000);
-
-      // Wait for any lazy-loaded images
-      await page.evaluate(() => {
-        return Promise.all(
-          Array.from(document.images)
-            .filter((img) => !img.complete)
-            .map(
-              (img) =>
-                new Promise((resolve) => {
-                  img.onload = img.onerror = resolve;
-                })
-            )
-        );
+      // Take screenshot
+      await page.screenshot({
+        path: screenshotPath,
+        fullPage: true,
       });
 
-      // Wait for any dynamic content to settle
-      await page.waitForTimeout(500);
-    } catch (error) {
-      this.logger.warn("Error waiting for dynamic content:", error);
+      this.logger.info(`Screenshot captured for ${device.name}`);
+      return {
+        device: device.name,
+        browser: "chromium",
+        filepath: screenshotPath,
+        timestamp: new Date().toISOString(),
+        viewport: device.viewport,
+      };
+    } catch (error: unknown) {
+      this.logger.error(
+        `Failed to capture screenshot for ${device.name}:`,
+        error
+      );
+      throw new Error(
+        `Screenshot capture failed for ${device.name}: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+    } finally {
+      await page.close();
     }
   }
 
@@ -205,6 +193,16 @@ export class ScreenshotManager {
    * Closes all browser instances and cleans up resources.
    */
   async cleanup(): Promise<void> {
-    await this.browserManager.cleanup();
+    try {
+      await this.browserManager.cleanup();
+      this.logger.info("Browser cleanup completed");
+    } catch (error: unknown) {
+      this.logger.error("Browser cleanup failed:", error);
+      throw new Error(
+        `Cleanup failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+    }
   }
 }
