@@ -4,6 +4,7 @@ import { DiffManager } from "./DiffManager.js";
 import { ReportManager } from "./ReportManager.js";
 import { Logger } from "../utils/Logger.js";
 import type { PixelPerfectConfig, ReportOutput } from "../types/index.js";
+import { DEFAULT_CONFIG } from "../config/defaults.js";
 import path from "path";
 import fs from "fs/promises";
 
@@ -29,52 +30,17 @@ export class PixelPerfect {
       throw new Error("URL is required");
     }
 
-    const defaultConfig = {
-      devices: [
-        {
-          name: "iPhone 12",
-          viewport: { width: 390, height: 844 },
-          deviceScaleFactor: 3,
-          isMobile: true,
-          hasTouch: true,
-          userAgent:
-            "Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1",
-        },
-        {
-          name: "iPad Pro",
-          viewport: { width: 1024, height: 1366 },
-          deviceScaleFactor: 2,
-          isMobile: true,
-          hasTouch: true,
-          userAgent:
-            "Mozilla/5.0 (iPad; CPU OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1",
-        },
-        {
-          name: "Desktop",
-          viewport: { width: 1920, height: 1080 },
-          deviceScaleFactor: 1,
-          isMobile: false,
-          hasTouch: false,
-          userAgent:
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.82 Safari/537.36",
-        },
-      ],
-      outputDir: "./screenshots",
-      thresholds: {
-        pixelMatch: 0.1,
-        performance: 90,
-      },
-    };
-
     this.config = {
-      ...defaultConfig,
+      ...DEFAULT_CONFIG,
       ...config,
     };
 
     this.logger = new Logger();
     this.deviceManager = new DeviceManager(this.config.devices);
-    this.screenshotManager = new ScreenshotManager();
-    this.diffManager = new DiffManager(this.config.thresholds);
+    this.screenshotManager = new ScreenshotManager(
+      this.config.maxParallelBrowsers
+    );
+    this.diffManager = new DiffManager(this.config.diffOptions);
     this.reportManager = new ReportManager(this.config.outputDir);
   }
 

@@ -52,12 +52,14 @@ export class ReportManager {
         },
         screenshots: screenshots.map((s) => ({
           device: s.device,
+          browser: s.browser,
           filepath: s.filepath,
           timestamp: s.timestamp,
           viewport: s.viewport,
         })),
         diffs: diffs.map((d) => ({
           device: d.device,
+          browser: d.browser,
           hasDiff: d.hasDiff,
           diffPercentage: d.diffPercentage,
           diffPath: d.diffPath,

@@ -25,10 +25,12 @@ export interface Device {
 export interface Screenshot {
   /** Device name for which the screenshot was taken. */
   device: string;
+  /** Browser used to take the screenshot. */
+  browser: string;
   /** File path to the screenshot image. */
   filepath: string;
   /** Optional timestamp when the screenshot was taken. */
-  timestamp?: string;
+  timestamp: string;
   /** Optional viewport dimensions. */
   viewport?: {
     width: number;
@@ -42,6 +44,8 @@ export interface Screenshot {
 export interface DiffResult {
   /** Device name. */
   device: string;
+  /** Browser used to take the screenshot. */
+  browser: string;
   /** Whether a visual difference was detected. */
   hasDiff: boolean;
   /** Percentage of pixels that differ. */
@@ -76,17 +80,22 @@ export interface TestReport {
  * Configuration options for Pixel Perfect runs.
  */
 export interface PixelPerfectConfig {
-  /** Target URL to test. */
   url: string;
-  /** Optional list of devices to test. */
+  outputDir: string;
+  browsers?: string[];
   devices?: Device[];
-  /** Optional output directory for results. */
-  outputDir?: string;
-  thresholds?: {
-    /** Optional pixel match threshold (0-1). */
-    pixelMatch?: number;
-    /** Optional performance threshold (0-1). */
-    performance?: number;
+  maxParallelBrowsers?: number;
+  diffOptions?: {
+    threshold?: number;
+    ignoreAntialiasing?: boolean;
+    ignoreColors?: boolean;
+    ignoreTransparency?: boolean;
+    ignoreRegions?: Array<{
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+    }>;
   };
 }
 

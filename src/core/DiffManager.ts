@@ -5,25 +5,41 @@ import path from "path";
 import { Logger } from "../utils/Logger.js";
 import type { Screenshot, DiffResult, TestReport } from "../types/index";
 
+interface DiffOptions {
+  threshold?: number;
+  ignoreAntialiasing?: boolean;
+  ignoreColors?: boolean;
+  ignoreTransparency?: boolean;
+  ignoreRegions?: Array<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  }>;
+}
+
 /**
  * Compares screenshots to baselines using pixelmatch and sharp.
  * Provides methods to compare images and generate diff reports.
+ * Implements smart diffing to ignore non-critical changes.
  */
 export class DiffManager {
   private logger: Logger;
-  private thresholds: {
-    pixelMatch: number;
-  };
+  private options: Required<DiffOptions>;
 
   /**
    * Creates a new DiffManager instance.
-   * @param thresholds - Optional thresholds for pixel matching.
+   * @param options - Optional diffing options.
    */
-  constructor(thresholds: { pixelMatch?: number } = {}) {
+  constructor(options: DiffOptions = {}) {
     this.logger = new Logger();
-    this.thresholds = {
-      pixelMatch: 0.1,
-      ...thresholds,
+    this.options = {
+      threshold: 0.1,
+      ignoreAntialiasing: true,
+      ignoreColors: false,
+      ignoreTransparency: true,
+      ignoreRegions: [],
+      ...options,
     };
   }
 
@@ -58,7 +74,7 @@ export class DiffManager {
    */
   private async compareScreenshot(screenshot: Screenshot): Promise<DiffResult> {
     try {
-      const { device, filepath } = screenshot;
+      const { device, browser, filepath } = screenshot;
       const baselinePath = path.join(
         path.dirname(filepath),
         "baseline",
@@ -70,10 +86,11 @@ export class DiffManager {
         await fs.access(baselinePath);
       } catch {
         this.logger.warn(
-          `No baseline found for ${device}, skipping comparison`
+          `No baseline found for ${device} on ${browser}, skipping comparison`
         );
         return {
           device,
+          browser,
           hasDiff: false,
           diffPercentage: 0,
           diffPath: null,
@@ -83,14 +100,14 @@ export class DiffManager {
 
       // Load and process images
       const [currentImage, baselineImage] = await Promise.all([
-        sharp(filepath).raw().toBuffer(),
-        sharp(baselinePath).raw().toBuffer(),
+        this.preprocessImage(filepath),
+        this.preprocessImage(baselinePath),
       ]);
 
       const { width, height } = await sharp(filepath).metadata();
       const diffImage = Buffer.alloc(width! * height! * 4);
 
-      // Compare images
+      // Compare images with smart diffing
       const diffPixels = pixelmatch(
         currentImage,
         baselineImage,
@@ -98,10 +115,19 @@ export class DiffManager {
         width!,
         height!,
         {
-          threshold: this.thresholds.pixelMatch,
-          includeAA: true,
+          threshold: this.options.threshold,
+          includeAA: !this.options.ignoreAntialiasing,
+          alpha: 0.5,
+          diffColor: [255, 0, 0],
+          diffColorAlt: [0, 0, 255],
+          diffMask: true,
         }
       );
+
+      // Apply ignore regions if specified
+      if (this.options.ignoreRegions.length > 0) {
+        await this.applyIgnoreRegions(diffImage, width!, height!);
+      }
 
       const diffPercentage = (diffPixels / (width! * height!)) * 100;
       const hasDiff = diffPercentage > 0;
@@ -123,6 +149,7 @@ export class DiffManager {
 
       return {
         device,
+        browser,
         hasDiff,
         diffPercentage,
         diffPath,
@@ -134,10 +161,52 @@ export class DiffManager {
       };
     } catch (error) {
       this.logger.error(
-        `Failed to compare screenshot for ${screenshot.device}:`,
+        `Failed to compare screenshot for ${screenshot.device} on ${screenshot.browser}:`,
         error
       );
       throw error;
+    }
+  }
+
+  /**
+   * Preprocesses an image for comparison.
+   * @param imagePath - Path to the image file.
+   * @returns {Promise<Buffer>} Processed image buffer.
+   */
+  private async preprocessImage(imagePath: string): Promise<Buffer> {
+    let image = sharp(imagePath);
+
+    if (this.options.ignoreColors) {
+      // Convert to grayscale
+      image = image.grayscale();
+    }
+
+    return image.raw().toBuffer();
+  }
+
+  /**
+   * Applies ignore regions to the diff image.
+   * @param diffImage - The diff image buffer.
+   * @param width - Image width.
+   * @param height - Image height.
+   */
+  private async applyIgnoreRegions(
+    diffImage: Buffer,
+    width: number,
+    height: number
+  ): Promise<void> {
+    for (const region of this.options.ignoreRegions) {
+      for (let y = region.y; y < region.y + region.height; y++) {
+        for (let x = region.x; x < region.x + region.width; x++) {
+          if (x >= 0 && x < width && y >= 0 && y < height) {
+            const idx = (y * width + x) * 4;
+            diffImage[idx] = 0; // R
+            diffImage[idx + 1] = 0; // G
+            diffImage[idx + 2] = 0; // B
+            diffImage[idx + 3] = 0; // A
+          }
+        }
+      }
     }
   }
 
