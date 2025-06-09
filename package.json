@@ -12,7 +12,9 @@
     "test": "jest",
     "lint": "eslint . --ext .ts",
     "lint:fix": "eslint . --ext .ts --fix",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "pixel-perfect": "tsx scripts/pixel-perfect.ts",
+    "pixel-perfect:baseline": "tsx scripts/pixel-perfect.ts --update-baseline"
   },
   "keywords": [
     "testing",
@@ -33,7 +35,8 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "sharp": "^0.34.2",
-    "winston": "^3.11.0"
+    "winston": "^3.11.0",
+    "yargs": "^17.7.2"
   },
   "devDependencies": {
     "@types/chalk": "^0.4.31",
@@ -51,6 +54,7 @@
     "playwright": "^1.52.0",
     "ts-jest": "^29.1.2",
     "ts-node": "^10.9.2",
-    "typescript": "~5.5.0"
+    "typescript": "^5.0.0",
+    "tsx": "^4.7.0"
   }
 }
